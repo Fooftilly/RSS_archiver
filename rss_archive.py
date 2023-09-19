@@ -162,8 +162,13 @@ def insert_archived_link(link, tld):
     conn.commit()
     conn.close()
 
+def download_rss_feed(rss_feed_url):
+    """Download an RSS feed and return its entries."""
+    feed = feedparser.parse(rss_feed_url)
+    return feed.entries
+
 def download_rss_feeds():
-    """Download RSS feeds and return the list of feed entries."""
+    """Download RSS feeds concurrently and return the list of feed entries."""
     all_entries = []
 
     # Get the list of RSS feed URLs from the 'rss_urls' file
@@ -172,15 +177,18 @@ def download_rss_feeds():
     # Shuffle the RSS feed URLs randomly
     random.shuffle(rss_feed_urls)
 
-    with tqdm(total=len(rss_feed_urls), desc="Downloading RSS Feeds", ncols=100) as pbar:
-        for rss_feed_url in rss_feed_urls:
-            # Parse the RSS feed
-            feed = feedparser.parse(rss_feed_url)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:  # Adjust max_workers as needed
+        futures = [executor.submit(download_rss_feed, rss_url) for rss_url in rss_feed_urls]
 
-            # Add entries to the list
-            all_entries.extend(feed.entries)
+        with tqdm(total=len(rss_feed_urls), desc="Downloading RSS Feeds", ncols=100) as pbar:
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    entries = future.result()
+                    all_entries.extend(entries)
+                except Exception as e:
+                    print(f"An error occurred: {e}")
 
-            pbar.update(1)
+                pbar.update(1)
 
     return all_entries
 
@@ -205,8 +213,6 @@ def main():
 
         # Check if the link is already archived in the database
         if not is_link_in_database(link):
-            # Print progress information
-            print(f'{timestamp()} {MAGENTA}[TO BE ARCHIVED {i}/{len(all_entries)}]: {RESET}{link}')
 
             # Add the link to the list of links to be archived
             links_to_archive.append(link)
