@@ -14,16 +14,10 @@ import tzlocal
 import random
 from tqdm import tqdm
 
-# Database file name
+# Constants
 DB_FILE = 'archive.db'
-
-# Maximum number of retries for a failed request
 MAX_RETRIES = 3
-
-# Delay between retries (in seconds)
 RETRY_DELAY = 7
-
-# Maximum time allowed for each link archival job (in seconds)
 MAX_LINK_ARCHIVAL_TIME = 200  # 5 minutes
 
 # ANSI escape codes for text color
@@ -76,8 +70,7 @@ def get_rss_feed_urls_from_file():
     rss_feed_urls = []
     try:
         with open('rss_urls', 'r') as file:
-            for line in file:
-                rss_feed_urls.append(line.strip())
+            rss_feed_urls = [line.strip() for line in file]
     except FileNotFoundError:
         print("RSS feed URLs file 'rss_urls' not found.")
     return rss_feed_urls
@@ -118,10 +111,10 @@ def archive_link(link):
                 return True
 
             # Check if the link is already archived on the Wayback Machine
-            #if is_link_archived(link):
-            #    print(f'{timestamp()} {YELLOW}[SKIP - ALREADY ARCHIVED ON WAYBACK MACHINE]: {RESET}{link}')
-            #    insert_archived_link(link, tld)
-            #    return True
+            if is_link_archived(link):
+                print(f'{timestamp()} {YELLOW}[SKIP - ALREADY ARCHIVED ON WAYBACK MACHINE]: {RESET}{link}')
+                insert_archived_link(link, tld)
+                return True
 
             # Save the link to the Internet Archive
             wayback_machine_url = 'https://web.archive.org/save/' + link
@@ -177,7 +170,7 @@ def download_rss_feeds():
     # Shuffle the RSS feed URLs randomly
     random.shuffle(rss_feed_urls)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:  # Adjust max_workers as needed
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         futures = [executor.submit(download_rss_feed, rss_url) for rss_url in rss_feed_urls]
 
         with tqdm(total=len(rss_feed_urls), desc="Downloading RSS Feeds", ncols=100) as pbar:
@@ -195,7 +188,7 @@ def download_rss_feeds():
 def main():
     """Main function to retrieve RSS feeds, download links, and archive them to the Wayback Machine."""
     create_database()
-    create_archive_table()  # Create the archive table
+    create_archive_table()
 
     # Get the current time
     current_time = datetime.now(tzlocal.get_localzone()).strftime("%H:%M:%S %Z")
