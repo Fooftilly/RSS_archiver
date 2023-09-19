@@ -9,3 +9,4 @@
 - Use rss_feeds table in archive.db to retrive list of links.
 - Check if the links is already archived on Wayback Machine. Better yet, if it isn't archived during specified timetable (last 7 days, 30 days...) trigger archving.
 - Make custom timetables for retriving new feed for every rss link. For example, don't download feed if it was downloaded 1 hour, 1 day... ago. Useful for feeds that only post few times per month or less, so that the feed server doesn't get unnecesary traffic.
+- Add an option to log links that get error archving to a file failed.txt
