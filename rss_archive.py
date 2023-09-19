@@ -81,10 +81,19 @@ def is_link_archived(link):
     response = requests.get(availability_url)
 
     if response.status_code == 200:
-        data = response.json()
-        return 'archived_snapshots' in data and len(data['archived_snapshots']) > 0
+        try:
+            data = response.json()
+            closest_snapshot = data.get('archived_snapshots', {}).get('closest', {})
+            if closest_snapshot.get('available') is True:
+                return True
+            else:
+                print(f'{timestamp()} {RED}URL IS NOT AVAILABLE IN THE WAYBACK MACHINE: {RESET}{link}')
+                return False
+        except json.JSONDecodeError:
+            print(f'{timestamp()} {RED}[Error parsing JSON response for URL]: {RESET}{link}')
+            return False
     else:
-        print(f'{timestamp()} {RED}[ERROR CHECKING AVAILABILITY AT IA]: {RESET}{link}')
+        print(f'{YELLOW}STATUS CODE: {response.status_code}{RESET} {RED}[ERROR CHECKING IA FOR URL]: {RESET}{link}')
         return False
 
 def format_request_error(e):
