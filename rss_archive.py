@@ -4,6 +4,7 @@ import feedparser
 import time
 import os
 import requests
+import requests_cache
 import sqlite3
 from datetime import datetime
 from urllib.parse import urlparse
@@ -196,6 +197,9 @@ def download_rss_feeds():
 
 def main():
     """Main function to retrieve RSS feeds, download links, and archive them to the Wayback Machine."""
+    # Initialize the requests cache
+    requests_cache.install_cache('my_cache', expire_after=3600, backend='sqlite', connection_string='my_cache.db') # Cache for 1h in sqlitedb
+
     create_database()
     create_archive_table()
 
