@@ -196,20 +196,33 @@ def main():
     # Download RSS feeds and get the list of feed entries
     all_entries = download_rss_feeds()
 
-    # Shuffle the list of feed entries randomly
-    random.shuffle(all_entries)
+    # Create a list to store links that need to be archived
+    links_to_archive = []
+
+    # Loop through each entry and check if the link is in the database
+    for i, entry in enumerate(all_entries, start=1):
+        link = entry.link
+
+        # Check if the link is already archived in the database
+        if not is_link_in_database(link):
+            # Print progress information
+            print(f'{timestamp()} {MAGENTA}[TO BE ARCHIVED {i}/{len(all_entries)}]: {RESET}{link}')
+
+            # Add the link to the list of links to be archived
+            links_to_archive.append(link)
+
+    # Shuffle the list of links to be archived randomly
+    random.shuffle(links_to_archive)
 
     # Create a ThreadPoolExecutor to process the links concurrently
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
         # Create a list to store link archive futures
         link_futures = []
 
-        # Loop through each entry and submit its link for archiving
-        for i, entry in enumerate(all_entries, start=1):
-            link = entry.link
-
+        # Loop through each link to be archived and submit it for archiving
+        for i, link in enumerate(links_to_archive, start=1):
             # Print progress information
-            print(f'{timestamp()} {MAGENTA}[ARCHIVING {i}/{len(all_entries)}]: {RESET}{link}')
+            print(f'{timestamp()} {MAGENTA}[ARCHIVING {i}/{len(links_to_archive)}]: {RESET}{link}')
 
             # Submit the link for archiving
             future = executor.submit(archive_link, link)
