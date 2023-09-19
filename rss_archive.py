@@ -177,7 +177,7 @@ def download_rss_feeds():
     # Shuffle the RSS feed URLs randomly
     random.shuffle(rss_feed_urls)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:  # Adjust max_workers as needed
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:  # Adjust max_workers as needed
         futures = [executor.submit(download_rss_feed, rss_url) for rss_url in rss_feed_urls]
 
         with tqdm(total=len(rss_feed_urls), desc="Downloading RSS Feeds", ncols=100) as pbar:
