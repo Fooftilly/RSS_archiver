@@ -1,6 +1,12 @@
 #!/bin/bash
 
+# Set the default sleep time to 30 minutes
+default_sleep_time="30m"
+
+# Use the provided sleep time argument if available, otherwise use the default
+sleep_time="${1:-$default_sleep_time}"
+
 while true; do
-    ./rss_archive.py  # Replace 'your_script.sh' with the actual script you want to run
-    sleep 10m
+    ./rss_archive.py
+    sleep "$sleep_time"
 done
