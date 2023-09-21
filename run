@@ -2,5 +2,5 @@
 
 while true; do
     ./rss_archive.py  # Replace 'your_script.sh' with the actual script you want to run
-    sleep 30m
+    sleep 10m
 done
