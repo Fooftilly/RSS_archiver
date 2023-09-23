@@ -4,7 +4,6 @@ import feedparser
 import time
 import os
 import requests
-import requests_cache
 import sqlite3
 from datetime import datetime
 from urllib.parse import urlparse
@@ -14,6 +13,10 @@ import concurrent.futures
 import tzlocal
 import random
 from tqdm import tqdm
+import hashlib
+import pickle
+from file_cache import FileCache
+
 
 # Constants
 DB_FILE = 'archive.db'
@@ -27,6 +30,11 @@ RED = '\033[31m'
 YELLOW = '\033[33m'
 MAGENTA = '\033[35m'
 RESET = '\033[0m'
+
+# Initialize FileCache
+cache_dir = 'file_cache'
+expiry_time = 60 * 60  # 1 hour
+cache = FileCache(cache_dir, expiry_time)
 
 def create_database():
     """Create the SQLite database and tables if they don't exist."""
@@ -77,6 +85,11 @@ def get_rss_feed_urls_from_file():
     return rss_feed_urls
 
 def is_link_archived(link):
+    key = f'archived_{link}'
+    data = cache.retrieve(key)
+    if data is not None:
+        return data
+
     """Check if a link is already archived on the Wayback Machine."""
     availability_url = f'https://archive.org/wayback/available?url={link}'
     response = requests.get(availability_url)
@@ -96,6 +109,10 @@ def is_link_archived(link):
     else:
         print(f'{YELLOW}STATUS CODE: {response.status_code}{RESET} {RED}[ERROR CHECKING IA FOR URL]: {RESET}{link}')
         return False
+
+    # Store the result in the cache before returning
+    cache.store(key, is_available)
+    return is_available
 
 def format_request_error(e):
     error_lines = traceback.format_exception(type(e), e, e.__traceback__)
@@ -167,8 +184,22 @@ def insert_archived_link(link, tld):
 
 def download_rss_feed(rss_feed_url):
     """Download an RSS feed and return its entries."""
-    feed = feedparser.parse(rss_feed_url)
-    return feed.entries
+
+    # Use the URL as the key for caching
+    key = f'rss_feed_{rss_feed_url}'
+
+    # Try to retrieve the feed from the cache
+    feed_entries = cache.retrieve(key)
+
+    # If the feed is not in the cache or is expired, download it
+    if feed_entries is None:
+        feed = feedparser.parse(rss_feed_url)
+        feed_entries = feed.entries
+
+        # Store the downloaded feed in the cache
+        cache.store(key, feed_entries)
+
+    return feed_entries
 
 def download_rss_feeds():
     """Download RSS feeds concurrently and return the list of feed entries."""
@@ -197,9 +228,6 @@ def download_rss_feeds():
 
 def main():
     """Main function to retrieve RSS feeds, download links, and archive them to the Wayback Machine."""
-    # Initialize the requests cache
-    requests_cache.install_cache('my_cache', expire_after=3600, backend='sqlite', connection_string='my_cache.db') # Cache for 1h in sqlitedb
-
     create_database()
     create_archive_table()
 
@@ -252,6 +280,9 @@ def main():
 
         # Wait for all link archiving futures to complete
         concurrent.futures.wait(link_futures)
+
+    # Perform cleanup of expired cache files at the end
+    cache.cleanup()
 
 if __name__ == '__main__':
     main()
