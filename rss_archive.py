@@ -4,6 +4,8 @@ import feedparser
 import time
 import os
 import requests
+import requests.exceptions
+import json
 import sqlite3
 from datetime import datetime
 from urllib.parse import urlparse
@@ -90,11 +92,12 @@ def is_link_archived(link):
     if data is not None:
         return data
 
-    """Check if a link is already archived on the Wayback Machine."""
     availability_url = f'https://archive.org/wayback/available?url={link}'
-    response = requests.get(availability_url)
 
-    if response.status_code == 200:
+    try:
+        response = requests.get(availability_url)
+        response.raise_for_status()  # Check if the request was successful
+
         try:
             data = response.json()
             closest_snapshot = data.get('archived_snapshots', {}).get('closest', {})
@@ -104,15 +107,19 @@ def is_link_archived(link):
                 print(f'{timestamp()} {RED}URL IS NOT AVAILABLE IN THE WAYBACK MACHINE: {RESET}{link}')
                 return False
         except json.JSONDecodeError:
-            print(f'{timestamp()} {RED}[Error parsing JSON response for URL]: {RESET}{link}')
+            print(f'{timestamp()} {RED}Error parsing JSON response for {link}{RESET}')
             return False
-    else:
-        print(f'{YELLOW}STATUS CODE: {response.status_code}{RESET} {RED}[ERROR CHECKING IA FOR URL]: {RESET}{link}')
-        return False
+
+    except requests.exceptions.ConnectionError:
+        print(f"{timestamp()} {RED}Connection error occurred while checking: {RESET}{link}")
+    except requests.exceptions.Timeout:
+        print(f"{timestamp()} {RED}Timeout occurred while checking: {RESET}{link}")
+    except requests.exceptions.RequestException as e:
+        print(f"{timestamp()} {RED}An error occurred while checking:  {RESET}{link} {e}")
 
     # Store the result in the cache before returning
-    cache.store(key, is_available)
-    return is_available
+    cache.store(key, False)
+    return False
 
 def format_request_error(e):
     error_lines = traceback.format_exception(type(e), e, e.__traceback__)
