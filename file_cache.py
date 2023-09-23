@@ -35,9 +35,15 @@ class FileCache:
         :param data: Data to be cached.
         """
         file_path = self._get_cache_file_path(key)
-        # Store the data along with the current timestamp
-        with open(file_path, 'wb') as cache_file:
-            pickle.dump((time.time(), data), cache_file)
+        try:
+            # Store the data along with the current timestamp
+            with open(file_path, 'wb') as cache_file:
+                try:
+                    pickle.dump((time.time(), data), cache_file)
+                except pickle.PickleError as e:
+                    print(f"Error pickling data for cache key {key}: {e}")
+        except IOError as e:
+            print(f"Error writing cache file {file_path}: {e}")
 
     def retrieve(self, key):
         """
@@ -48,12 +54,18 @@ class FileCache:
         """
         file_path = self._get_cache_file_path(key)
         if os.path.exists(file_path):
-            with open(file_path, 'rb') as cache_file:
-                timestamp, data = pickle.load(cache_file)
-                # Check if the cache item has expired
-                if time.time() - timestamp < self.expiry_time:
-                    return data
-                else:
-                    # Delete the expired cache file
-                    os.remove(file_path)
+            try:
+                with open(file_path, 'rb') as cache_file:
+                    try:
+                        timestamp, data = pickle.load(cache_file)
+                        # Check if the cache item has expired
+                        if time.time() - timestamp < self.expiry_time:
+                            return data
+                        else:
+                            # Delete the expired cache file
+                            os.remove(file_path)
+                    except pickle.UnpicklingError as e:
+                        print(f"Error unpickling data for cache key {key}: {e}")
+            except IOError as e:
+                print(f"Error reading cache file {file_path}: {e}")
         return None
