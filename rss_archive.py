@@ -133,6 +133,9 @@ def format_request_error(e):
 
 def archive_link(link):
     """Archive a link to the Wayback Machine with retry mechanism."""
+    # Print progress information before archiving the link
+    print(f'{timestamp()} {MAGENTA}[ARCHIVING]: {RESET}{link}')
+
     for attempt in range(MAX_RETRIES):
         try:
             # Extract the TLD using tldextract
@@ -254,7 +257,6 @@ def main():
 
         # Check if the link is already archived in the database
         if not is_link_in_database(link):
-
             # Add the link to the list of links to be archived
             links_to_archive.append(link)
 
@@ -263,30 +265,22 @@ def main():
 
     # Create a ThreadPoolExecutor to process the links concurrently
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        # Create a list to store link archive futures
-        link_futures = []
+        # Create a list to store future objects
+        futures = []
 
         # Loop through each link to be archived and submit it for archiving
-        for i, link in enumerate(links_to_archive, start=1):
-            # Print progress information
-            print(f'{timestamp()} {MAGENTA}[ARCHIVING {i}/{len(links_to_archive)}]: {RESET}{link}')
-
-            # Submit the link for archiving
+        for link in links_to_archive:
+            # Submit the link for archiving and store the future object
             future = executor.submit(archive_link, link)
+            futures.append(future)
 
-            # Wait for the future to complete with a timeout
+        # Iterate through the completed futures and handle their results or exceptions
+        for future in concurrent.futures.as_completed(futures):
             try:
-                concurrent.futures.wait([future], timeout=MAX_LINK_ARCHIVAL_TIME)
-            except concurrent.futures.TimeoutError:
-                # If the future times out, cancel it and print a message
-                future.cancel()
-                print(f'{timestamp()} {YELLOW}[SKIP - TIMEOUT]: {RESET}{link}')
-                continue
-
-            link_futures.append(future)
-
-        # Wait for all link archiving futures to complete
-        concurrent.futures.wait(link_futures)
+                # Get the result of the future (will raise an exception if the function errored)
+                result = future.result()
+            except Exception as e:
+                print(f"{timestamp()} {RED}An error occurred during archiving: {e}{RESET}")
 
     # Perform cleanup of expired cache files at the end
     cache.cleanup()
