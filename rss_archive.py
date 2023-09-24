@@ -186,9 +186,14 @@ def insert_archived_link(link, tld):
 
 def download_rss_feed(rss_feed_url):
     """Download an RSS feed and return its entries."""
-
     # Use the URL as the key for caching
     key = f'rss_feed_{rss_feed_url}'
+
+    # Try to retrieve the ETag for the RSS feed URL from the cache
+    etag = cache.retrieve_etag(rss_feed_url)
+    headers = {}
+    if etag:
+        headers['If-None-Match'] = etag
 
     # Try to retrieve the feed from the cache
     feed_entries = cache.retrieve(key)
@@ -196,16 +201,21 @@ def download_rss_feed(rss_feed_url):
     # If the feed is not in the cache or is expired, download it
     if feed_entries is None:
         try:
-            # Fetch the RSS feed with a 30-second timeout
-            response = requests.get(rss_feed_url, timeout=30)
+            # Fetch the RSS feed with a 30-second timeout and the ETag in the headers
+            response = requests.get(rss_feed_url, timeout=30, headers=headers)
 
-            # Check if the request was successful
-            if response.status_code == 200:
+            # Handle the response based on the status code
+            if response.status_code == 304:
+                # The feed has not been modified, use the cached version
+                feed_entries = cache.retrieve(key)
+            elif response.status_code == 200:
+                # The feed has been modified or is being fetched for the first time
                 feed = feedparser.parse(response.text)
                 feed_entries = feed.entries
 
-                # Store the downloaded feed in the cache
+                # Store the downloaded feed and the ETag in the cache
                 cache.store(key, feed_entries)
+                cache.store_etag(rss_feed_url, response.headers.get('ETag'))
             else:
                 tqdm.write(f"{RED}Failed to download RSS feed from:{RESET} {rss_feed_url} {RED}HTTP Response Code:{RESET} {YELLOW}{response.status_code}{RESET}")
         except requests.RequestException as e:
@@ -288,9 +298,6 @@ def main():
                 progress_bar.update(1)
             except Exception as e:
                 tqdm.write(f"{timestamp()} {RED}An error occurred during archiving: {e}{RESET}")
-
-    # Perform cleanup of expired cache files at the end
-    cache.cleanup()
 
 if __name__ == '__main__':
     main()
