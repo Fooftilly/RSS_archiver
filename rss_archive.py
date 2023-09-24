@@ -195,11 +195,21 @@ def download_rss_feed(rss_feed_url):
 
     # If the feed is not in the cache or is expired, download it
     if feed_entries is None:
-        feed = feedparser.parse(rss_feed_url)
-        feed_entries = feed.entries
+        try:
+            # Fetch the RSS feed with a 30-second timeout
+            response = requests.get(rss_feed_url, timeout=30)
 
-        # Store the downloaded feed in the cache
-        cache.store(key, feed_entries)
+            # Check if the request was successful
+            if response.status_code == 200:
+                feed = parse(response.text)
+                feed_entries = feed.entries
+
+                # Store the downloaded feed in the cache
+                cache.store(key, feed_entries)
+            else:
+                tqdm.write(f"{RED}Failed to download RSS feed from:{RESET} {rss_feed_url} {RED}HTTP Response Code:{RESET} {YELLOW}{response.status_code}{RESET}")
+        except requests.RequestException as e:
+            tqdm.write(f"{RED}Error downloading RSS feed from{RESET} {rss_feed_url}: {YELLOW}{e}{RESET}")
 
     return feed_entries
 
