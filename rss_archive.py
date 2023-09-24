@@ -101,25 +101,17 @@ def is_link_archived(link):
         try:
             data = response.json()
             closest_snapshot = data.get('archived_snapshots', {}).get('closest', {})
-            if closest_snapshot.get('available') is True:
-                return True
-            else:
-                tqdm.write(f'{timestamp()} {RED}URL IS NOT AVAILABLE IN THE WAYBACK MACHINE: {RESET}{link}')
-                return False
+            is_available = closest_snapshot.get('available') is True
         except json.JSONDecodeError:
             tqdm.write(f'{timestamp()} {RED}Error parsing JSON response for {link}{RESET}')
-            return False
-
-    except requests.exceptions.ConnectionError:
-        tqdm.write(f"{timestamp()} {RED}Connection error occurred while checking: {RESET}{link}")
-    except requests.exceptions.Timeout:
-        tqdm.write(f"{timestamp()} {RED}Timeout occurred while checking: {RESET}{link}")
-    except requests.exceptions.RequestException as e:
-        tqdm.write(f"{timestamp()} {RED}An error occurred while checking:  {RESET}{link} {e}")
+            is_available = False
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
+        tqdm.write(f"{timestamp()} {RED}An error occurred while checking: {RESET}{link} {e}")
+        is_available = False
 
     # Store the result in the cache before returning
-    cache.store(key, False)
-    return False
+    cache.store(key, is_available)
+    return is_available
 
 def format_request_error(e):
     error_lines = traceback.format_exception(type(e), e, e.__traceback__)
