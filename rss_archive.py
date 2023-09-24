@@ -201,7 +201,7 @@ def download_rss_feed(rss_feed_url):
 
             # Check if the request was successful
             if response.status_code == 200:
-                feed = parse(response.text)
+                feed = feedparser.parse(response.text)
                 feed_entries = feed.entries
 
                 # Store the downloaded feed in the cache
