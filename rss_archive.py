@@ -269,7 +269,7 @@ def main():
     progress_bar = tqdm(total=len(links_to_archive), desc="ARCHIVING", position=0, leave=True)
 
     # Create a ThreadPoolExecutor to process the links concurrently
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         # Create a list to store future objects
         futures = []
 
