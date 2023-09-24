@@ -83,7 +83,7 @@ def get_rss_feed_urls_from_file():
         with open('rss_urls', 'r') as file:
             rss_feed_urls = [line.strip() for line in file]
     except FileNotFoundError:
-        print("RSS feed URLs file 'rss_urls' not found.")
+        tqdm.write("RSS feed URLs file 'rss_urls' not found.")
     return rss_feed_urls
 
 def is_link_archived(link):
@@ -104,18 +104,18 @@ def is_link_archived(link):
             if closest_snapshot.get('available') is True:
                 return True
             else:
-                print(f'{timestamp()} {RED}URL IS NOT AVAILABLE IN THE WAYBACK MACHINE: {RESET}{link}')
+                tqdm.write(f'{timestamp()} {RED}URL IS NOT AVAILABLE IN THE WAYBACK MACHINE: {RESET}{link}')
                 return False
         except json.JSONDecodeError:
-            print(f'{timestamp()} {RED}Error parsing JSON response for {link}{RESET}')
+            tqdm.write(f'{timestamp()} {RED}Error parsing JSON response for {link}{RESET}')
             return False
 
     except requests.exceptions.ConnectionError:
-        print(f"{timestamp()} {RED}Connection error occurred while checking: {RESET}{link}")
+        tqdm.write(f"{timestamp()} {RED}Connection error occurred while checking: {RESET}{link}")
     except requests.exceptions.Timeout:
-        print(f"{timestamp()} {RED}Timeout occurred while checking: {RESET}{link}")
+        tqdm.write(f"{timestamp()} {RED}Timeout occurred while checking: {RESET}{link}")
     except requests.exceptions.RequestException as e:
-        print(f"{timestamp()} {RED}An error occurred while checking:  {RESET}{link} {e}")
+        tqdm.write(f"{timestamp()} {RED}An error occurred while checking:  {RESET}{link} {e}")
 
     # Store the result in the cache before returning
     cache.store(key, False)
@@ -134,7 +134,7 @@ def format_request_error(e):
 def archive_link(link):
     """Archive a link to the Wayback Machine with retry mechanism."""
     # Print progress information before archiving the link
-    print(f'{timestamp()} {MAGENTA}[ARCHIVING]: {RESET}{link}')
+    tqdm.write(f'{timestamp()} {MAGENTA}[ARCHIVING]: {RESET}{link}')
 
     for attempt in range(MAX_RETRIES):
         try:
@@ -144,12 +144,12 @@ def archive_link(link):
 
             # Check if the link is already archived in the database
             if is_link_in_database(link):
-                print(f'{timestamp()} {YELLOW}[SKIP - ALREADY ARCHIVED LOCALLY]: {RESET}{link}')
+                tqdm.write(f'{timestamp()} {YELLOW}[SKIP - ALREADY ARCHIVED LOCALLY]: {RESET}{link}')
                 return True
 
             # Check if the link is already archived on the Wayback Machine
             if is_link_archived(link):
-                print(f'{timestamp()} {YELLOW}[SKIP - ALREADY ARCHIVED ON WAYBACK MACHINE]: {RESET}{link}')
+                tqdm.write(f'{timestamp()} {YELLOW}[SKIP - ALREADY ARCHIVED ON WAYBACK MACHINE]: {RESET}{link}')
                 insert_archived_link(link, tld)
                 return True
 
@@ -158,11 +158,11 @@ def archive_link(link):
             response = requests.get(wayback_machine_url)
 
             if response.status_code == 200:
-                print(f'{timestamp()} {GREEN}[SUCCESSFULLY ARCHIVED]: {RESET}{link}')
+                tqdm.write(f'{timestamp()} {GREEN}[SUCCESSFULLY ARCHIVED]: {RESET}{link}')
                 insert_archived_link(link, tld)
                 return True
             else:
-                print(f'{timestamp()} {RED}[ERROR ARCHIVING]: {RESET}{link}')
+                tqdm.write(f'{timestamp()} {RED}[ERROR ARCHIVING]: {RESET}{link}')
 
         except requests.exceptions.RequestException as e:
             error_message = format_request_error(e)
@@ -170,7 +170,7 @@ def archive_link(link):
 
             # Format the error message for clarity
             formatted_error = "\n".join(["-"*50, error_message, retry_message, "-"*50])
-            print(f'{formatted_error}')
+            tqdm.write(f'{formatted_error}')
 
         time.sleep(RETRY_DELAY)
     return False
@@ -230,7 +230,7 @@ def download_rss_feeds():
                     entries = future.result()
                     all_entries.extend(entries)
                 except Exception as e:
-                    print(f"An error occurred: {e}")
+                    tqdm.write(f"An error occurred: {e}")
 
                 pbar.update(1)
 
@@ -243,7 +243,7 @@ def main():
 
     # Get the current time
     current_time = datetime.now(tzlocal.get_localzone()).strftime("%H:%M:%S %Z")
-    print(f'Running script at {current_time}')
+    tqdm.write(f'Running script at {current_time}')
 
     # Download RSS feeds and get the list of feed entries
     all_entries = download_rss_feeds()
@@ -263,6 +263,9 @@ def main():
     # Shuffle the list of links to be archived randomly
     random.shuffle(links_to_archive)
 
+    # Initialize tqdm progress bar
+    progress_bar = tqdm(total=len(links_to_archive), desc="Archiving", position=0, leave=True)
+
     # Create a ThreadPoolExecutor to process the links concurrently
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
         # Create a list to store future objects
@@ -279,8 +282,10 @@ def main():
             try:
                 # Get the result of the future (will raise an exception if the function errored)
                 result = future.result()
+                # Update the progress bar
+                progress_bar.update(1)
             except Exception as e:
-                print(f"{timestamp()} {RED}An error occurred during archiving: {e}{RESET}")
+                tqdm.write(f"{timestamp()} {RED}An error occurred during archiving: {e}{RESET}")
 
     # Perform cleanup of expired cache files at the end
     cache.cleanup()
