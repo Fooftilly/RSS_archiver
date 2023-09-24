@@ -209,19 +209,18 @@ def download_rss_feed(rss_feed_url):
                 # The feed has not been modified, use the cached version
                 feed_entries = cache.retrieve(key)
             elif response.status_code == 200:
-                # The feed has been modified or is being fetched for the first time
+                # Parse the feed and cache it
                 feed = feedparser.parse(response.text)
                 feed_entries = feed.entries
-
-                # Store the downloaded feed and the ETag in the cache
                 cache.store(key, feed_entries)
-                cache.store_etag(rss_feed_url, response.headers.get('ETag'))
             else:
                 tqdm.write(f"{RED}Failed to download RSS feed from:{RESET} {rss_feed_url} {RED}HTTP Response Code:{RESET} {YELLOW}{response.status_code}{RESET}")
+                feed_entries = []  # Set feed_entries to an empty list
         except requests.RequestException as e:
             tqdm.write(f"{RED}Error downloading RSS feed from{RESET} {rss_feed_url}: {YELLOW}{e}{RESET}")
+            feed_entries = []  # Set feed_entries to an empty list
 
-    return feed_entries
+    return feed_entries or []  # Ensure the function always returns a list
 
 def download_rss_feeds():
     """Download RSS feeds concurrently and return the list of feed entries."""
