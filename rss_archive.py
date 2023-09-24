@@ -256,7 +256,7 @@ def main():
     random.shuffle(links_to_archive)
 
     # Initialize tqdm progress bar
-    progress_bar = tqdm(total=len(links_to_archive), desc="Archiving", position=0, leave=True)
+    progress_bar = tqdm(total=len(links_to_archive), desc="ARCHIVING", position=0, leave=True)
 
     # Create a ThreadPoolExecutor to process the links concurrently
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
