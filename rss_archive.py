@@ -103,10 +103,10 @@ def is_link_archived(link):
             closest_snapshot = data.get('archived_snapshots', {}).get('closest', {})
             is_available = closest_snapshot.get('available') is True
         except json.JSONDecodeError:
-            tqdm.write(f'{timestamp()} {RED}Error parsing JSON response for {link}{RESET}')
+            tqdm.write(f'{timestamp()} {RED}Error parsing JSON response for{RESET} {link}')
             is_available = False
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
-        tqdm.write(f"{timestamp()} {RED}An error occurred while checking: {RESET}{link} {e}")
+        tqdm.write(f"{timestamp()} {RED}An error occurred while checking: {RESET}{link} {YELLOW}{e}{RESET}")
         is_available = False
 
     # Store the result in the cache before returning
