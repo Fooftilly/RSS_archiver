@@ -103,10 +103,10 @@ def is_link_archived(link):
             closest_snapshot = data.get('archived_snapshots', {}).get('closest', {})
             is_available = closest_snapshot.get('available') is True
         except json.JSONDecodeError:
-            tqdm.write(f'{timestamp()} {RED}Error parsing JSON response for{RESET} {link}')
+            tqdm.write(f'{timestamp()} {RED}[ERROR PARSING JSON RESPONSE]: {RESET} {link}')
             is_available = False
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
-        tqdm.write(f"{timestamp()} {RED}An error occurred while checking: {RESET}{link} {YELLOW}{e}{RESET}")
+        tqdm.write(f"{timestamp()} {RED}[ERROR]: {RESET}{YELLOW}{e}{RESET}")
         is_available = False
 
     # Store the result in the cache before returning
@@ -217,10 +217,10 @@ def download_rss_feed(rss_feed_url):
                 feed_entries = feed.entries
                 cache.store(key, feed_entries)
             else:
-                tqdm.write(f"{RED}Failed to download RSS feed from:{RESET} {rss_feed_url} {RED}HTTP Response Code:{RESET} {YELLOW}{response.status_code}{RESET}")
+                tqdm.write(f"{RED}[FAILED TO DOWNLOAD RSS FEED]:{RESET} {rss_feed_url} {RED}[HTTP RESPONSE CODE]:{RESET} {YELLOW}{response.status_code}{RESET}")
                 feed_entries = []  # Set feed_entries to an empty list
         except requests.RequestException as e:
-            tqdm.write(f"{RED}Error downloading RSS feed from{RESET} {rss_feed_url}: {YELLOW}{e}{RESET}")
+            tqdm.write(f"{RED}[ERROR DOWNLOADING RSS FEED]:{RESET} {rss_feed_url} {RED}[RESPONSE]:{RESET} {YELLOW}{e}{RESET}")
             feed_entries = []  # Set feed_entries to an empty list
 
     return feed_entries or []  # Ensure the function always returns a list
