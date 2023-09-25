@@ -178,6 +178,9 @@ def is_link_in_database(link):
 
 def insert_archived_link(link, tld):
     """Insert an archived link into the database with TLD."""
+    # Remove the 'www.' part from the tld
+    tld = tld.replace('www.', '')
+
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('INSERT OR IGNORE INTO archived_links (url, tld) VALUES (?, ?)', (link, tld))
