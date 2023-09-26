@@ -154,7 +154,7 @@ def archive_link(link):
                 insert_archived_link(link, tld)
                 return True
             else:
-                tqdm.write(f'{timestamp()} {RED}[ERROR ARCHIVING]: {RESET}{link}')
+                tqdm.write(f'{timestamp()} {RED}[ERROR ARCHIVING]: {RESET}{link} {RED}[HTTP RESPONSE CODE]:{RESET} {YELLOW}{response.status_code}{RESET}')
 
         except requests.exceptions.RequestException as e:
             error_message = format_request_error(e)
@@ -163,6 +163,8 @@ def archive_link(link):
             # Format the error message for clarity
             formatted_error = "\n".join(["-"*50, error_message, retry_message, "-"*50])
             tqdm.write(f'{formatted_error}')
+        except Exception as e:
+            tqdm.write(f"{timestamp()} {RED}[UNEXPECTED ERROR]: {RESET}{e}")
 
         time.sleep(RETRY_DELAY)
     return False
@@ -222,6 +224,8 @@ def download_rss_feed(rss_feed_url):
         except requests.RequestException as e:
             tqdm.write(f"{RED}[ERROR DOWNLOADING RSS FEED]:{RESET} {rss_feed_url} {RED}[RESPONSE]:{RESET} {YELLOW}{e}{RESET}")
             feed_entries = []  # Set feed_entries to an empty list
+        except Exception as e:
+            tqdm.write(f"{RED}[UNEXPECTED ERROR]: {RESET}{e}")
 
     return feed_entries or []  # Ensure the function always returns a list
 
