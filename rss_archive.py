@@ -147,7 +147,7 @@ def archive_link(link):
 
             # Save the link to the Internet Archive
             wayback_machine_url = 'https://web.archive.org/save/' + link
-            response = requests.get(wayback_machine_url)
+            response = requests.get(wayback_machine_url, timeout=60)  # Set timeout
 
             if response.status_code == 200:
                 tqdm.write(f'{timestamp()} {GREEN}[SUCCESSFULLY ARCHIVED]: {RESET}{link}')
