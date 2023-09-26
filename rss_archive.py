@@ -303,7 +303,7 @@ def main():
                 # Update the progress bar
                 progress_bar.update(1)
             except Exception as e:
-                tqdm.write(f"{timestamp()} {RED}An error occurred during archiving: {e}{RESET}")
+                tqdm.write(f"{timestamp()} {RED}[ERROR DURING ARCHIVING]: {e}{RESET}")
 
 if __name__ == '__main__':
     main()
