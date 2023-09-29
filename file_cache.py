@@ -1,4 +1,3 @@
-
 import os
 import time
 import pickle
@@ -14,7 +13,7 @@ class FileCache:
     def _get_cache_file_path(self, key):
         hashed_key = hashlib.sha256(key.encode()).hexdigest()
         return os.path.join(self.cache_dir, hashed_key)
-    
+
     def _get_etag_file_path(self, key):
         hashed_key = hashlib.sha256(key.encode()).hexdigest()
         return os.path.join(self.cache_dir, 'etags', hashed_key)
@@ -41,13 +40,13 @@ class FileCache:
             except (IOError, pickle.PickleError) as e:
                 print(f"Error reading cache file {file_path}: {e}")
         return None
-    
+
     def store_etag(self, key, etag):
         file_path = self._get_etag_file_path(key)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, 'w') as etag_file:
             etag_file.write(etag)
-    
+
     def retrieve_etag(self, key):
         file_path = self._get_etag_file_path(key)
         if os.path.exists(file_path):
