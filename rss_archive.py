@@ -73,7 +73,7 @@ def create_archive_table():
 def timestamp():
     """Get the current timestamp in a readable format with blue color."""
     local_timezone = tzlocal.get_localzone()
-    current_time = datetime.now(local_timezone).strftime("%H:%M:S %Z")
+    current_time = datetime.now(local_timezone).strftime("%H:%M:%S")
     return f'\033[34m{current_time}\033[0m'
 
 def get_rss_feed_urls_from_file():
@@ -260,7 +260,7 @@ def main():
     create_archive_table()
 
     # Get the current time
-    current_time = datetime.now(tzlocal.get_localzone()).strftime("%H:%M:%S %Z")
+    current_time = datetime.now(tzlocal.get_localzone()).strftime("%H:%M:%S")
     tqdm.write(f'Running script at {current_time}')
 
     # Download RSS feeds and get the list of feed entries
