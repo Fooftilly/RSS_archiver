@@ -271,12 +271,14 @@ def main():
 
     # Loop through each entry and check if the link is in the database
     for i, entry in enumerate(all_entries, start=1):
-        link = entry.link
-
-        # Check if the link is already archived in the database
-        if not is_link_in_database(link):
-            # Add the link to the list of links to be archived
-            links_to_archive.append(link)
+        if hasattr(entry, 'link'):
+            link = entry.link
+            # Check if the link is already archived in the database
+            if not is_link_in_database(link):
+                # Add the link to the list of links to be archived
+                links_to_archive.append(link)
+        else:
+            tqdm.write(f'{timestamp()} {RED}[ERROR]: Entry does not have a link attribute{RESET}')
 
     # Shuffle the list of links to be archived randomly
     random.shuffle(links_to_archive)
