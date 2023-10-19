@@ -132,7 +132,7 @@ def archive_link(link):
         try:
             # Extract the TLD using tldextract
             ext = tldextract.extract(link)
-            tld = '.'.join(part for part in ext if part)
+            tld = f'{ext.domain}.{ext.suffix}'
 
             # Check if the link is already archived in the database
             if is_link_in_database(link):
